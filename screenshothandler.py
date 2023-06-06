@@ -1,3 +1,11 @@
+import time
+
+start = time.perf_counter()
+
+from datetime import datetime
+
+startingTimestamp = datetime.now()
+
 import os
 import time
 from datetime import date, timedelta
@@ -59,3 +67,11 @@ for x in os.listdir():
         older += 1
 
 print("Aktuelle Daten: ", actuall , " Veralterte Daten: ", older, " Gelöschte Daten: ", toOld)
+
+cwd = os.chdir("/Users/marcoburger/CronTabs/ScreenshotHandler")
+cwd = os.getcwd()
+
+logfile = open('log.csv', 'a')
+logfile.write("\r\n" + startingTimestamp.strftime("%d.%m.%Y %H:%M:%S") +";"+ str(actuall)+";"+str(older)+";"+str(toOld))
+logfile.close()
+
