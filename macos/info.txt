@@ -1,0 +1,12 @@
+#CronTabs unter MacOS anlegen
+crontab -e
+
+#Eintrag im CronTab unter MacOS
+0 * * * * /usr/local/bin/python3 /Users/marcoburger/CronTabs/ScreenshotHandler/screenshothandler.py
+
+Nach dem Eintrag mit "ESC" Editormodus verlasen
+
+Mit ":wq" sichern
+
+#CronTabs prüfen
+crontab -l
