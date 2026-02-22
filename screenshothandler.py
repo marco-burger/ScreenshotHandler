@@ -10,6 +10,41 @@ import os
 import time
 from datetime import date, timedelta
 
+import logging
+import sys
+from pathlib import Path
+
+# -------------------------------------------------------------
+# Logging-Setup
+# -------------------------------------------------------------
+
+# Name der aktuellen Python-Datei ohne .py
+script_name = Path(__file__).stem
+
+# Aktueller Monat formatieren (YYYY-MM)
+this_month = datetime.now().strftime("%Y-%m")
+
+# Logfile-Name erzeugen
+log_filename = f"{script_name}_{this_month}.log"
+log_path = Path("/Users/marcoburger/CronTabs/ScreenshotHandler") / log_filename
+log_path.parent.mkdir(parents=True, exist_ok=True)  # Sicherstellen, dass der Ordner existiert 
+
+# Logging konfigurieren
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(log_path, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout)  # Ausgabe weiterhin in Konsole
+    ]
+)
+
+# Beispiel-Ausgaben
+# logging.info("Script gestartet")
+# logging.debug("Debug-Information")
+# logging.warning("Warnung!")
+# logging.error("Fehler aufgetreten")
+
 cwd = os.getcwd()
 
 #print("Current working directory: ", cwd)
@@ -66,12 +101,6 @@ for x in os.listdir():
     else:
         older += 1
 
-print("Aktuelle Daten: ", actuall , " Veralterte Daten: ", older, " Gelöschte Daten: ", toOld)
+logging.info("Aktuelle Daten: %d, Veralterte Daten: %d, Gelöschte Daten: %d", actuall, older, toOld)
 
-cwd = os.chdir("/Users/marcoburger/CronTabs/ScreenshotHandler")
-cwd = os.getcwd()
-
-logfile = open('log.csv', 'a')
-logfile.write("\r\n" + startingTimestamp.strftime("%d.%m.%Y %H:%M:%S") +";"+ str(actuall)+";"+str(older)+";"+str(toOld))
-logfile.close()
 
