@@ -35,7 +35,7 @@ this_month = datetime.now().strftime("%Y-%m")
 
 # Logfile-Name erzeugen
 log_filename = f"{script_name}_{this_month}.log"
-log_path = Path(r"C:\Users\<USER>\CronTabs\ScreenshotHandler") / log_filename
+log_path = Path(r"C:\Users\<USER>\CronTabs\ScreenshotHandler\logs") / log_filename
 log_path.parent.mkdir(parents=True, exist_ok=True)  # Sicherstellen, dass der Ordner existiert 
 
 # Logging konfigurieren
