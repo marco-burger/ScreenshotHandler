@@ -62,9 +62,9 @@ today = date.today()
 today = time.localtime()
 today = time.strftime("%Y-%m-%d", today)
 
-yesterday = date.today() - timedelta(10)
+minus10days = date.today() - timedelta(10)
 
-yesterday2 = date.today() - timedelta(90)
+minus90days = date.today() - timedelta(90)
 
 actuall = 0
 older = 0
@@ -74,7 +74,7 @@ for file in base_dir.iterdir():
     if file.suffix.lower() == ".png":
         fts = file.stat().st_mtime
         fts_ctz = date.fromtimestamp(fts)
-        if fts_ctz <= yesterday:
+        if fts_ctz <= minus10days:
             older += 1
             src_path = file
             dst_path = archive_dir / file.name
@@ -85,7 +85,7 @@ for file in base_dir.iterdir():
 for file in archive_dir.iterdir():
     fts_ctz = date.fromtimestamp(file.stat().st_mtime)
     fts_ctz = date.fromtimestamp(fts)
-    if fts_ctz <= yesterday2:
+    if fts_ctz <= minus90days:
         toOld += 1
         file.unlink()
     else:
