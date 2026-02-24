@@ -64,7 +64,7 @@ today = time.strftime("%Y-%m-%d", today)
 
 yesterday = date.today() - timedelta(10)
 
-yesterday2 = date.today() - timedelta(360)
+yesterday2 = date.today() - timedelta(90)
 
 actuall = 0
 older = 0
