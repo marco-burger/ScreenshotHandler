@@ -67,30 +67,33 @@ minus10days = date.today() - timedelta(10)
 minus90days = date.today() - timedelta(90)
 
 actuall = 0
-older = 0
-toOld = 0
+toArchive = 0
+inArchive = 0
+deleted = 0
 
 for file in base_dir.iterdir():
     if file.suffix.lower() == ".png":
         fts = file.stat().st_mtime
         fts_ctz = date.fromtimestamp(fts)
         if fts_ctz <= minus10days:
-            older += 1
+            toArchive += 1
             src_path = file
             dst_path = archive_dir / file.name
             file.replace(dst_path)
         else:
             actuall += 1
 
-for file in archive_dir.iterdir():
-    fts_ctz = date.fromtimestamp(file.stat().st_mtime)
-    fts_ctz = date.fromtimestamp(fts)
-    if fts_ctz <= minus90days:
-        toOld += 1
-        file.unlink()
-    else:
-        older += 1
+#Spezieller Fix für OneDrive: Alle Dateien im Archiv durchgehen und die alten Dateien löschen, da OneDrive sonst nicht mehr synchronisiert, wenn zu viele Dateien im Archiv liegen. Es werden nur die Dateien gelöscht, die älter als 90 Tage sind.
+archive_files = [p for p in archive_dir.iterdir() if p.is_file() and p.suffix.lower() == ".png"]
 
-logging.info("Aktuelle Daten: %d, Veralterte Daten: %d, Gelöschte Daten: %d", actuall, older, toOld)
+for file_a in archive_files:
+    mdate = date.fromtimestamp(file_a.stat().st_mtime)
+    if mdate <= minus90days:
+        deleted += 1
+        file_a.unlink()
+    else:
+        inArchive += 1
+
+logging.info("Aktuelle Daten: %d, Verschobene Daten: %d, Archivierte Daten: %d, Gelöschte Daten: %d", actuall, toArchive, inArchive, deleted)
 
 
