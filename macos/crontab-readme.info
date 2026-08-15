@@ -1,12 +1,18 @@
-#CronTabs unter MacOS anlegen
+# CronTab unter macOS anlegen
+
 crontab -e
 
-#Eintrag im CronTab unter MacOS
-0 * * * * /usr/local/bin/python3 /Users/marcoburger/CronTabs/ScreenshotHandler/screenshothandler.py
+# Eintrag im CronTab (stuendlich, jeweils zur vollen Stunde).
+# Pfad an die eigene Installation anpassen.
 
-Nach dem Eintrag mit "ESC" Editormodus verlasen
+0 * * * * /usr/bin/python3 "$HOME/CronTabs/ScreenshotHandler/screenshothandler.py"
 
-Mit ":wq" sichern
+# Nach dem Eintrag mit "ESC" den Editormodus verlassen,
+# mit ":wq" sichern.
 
-#CronTabs prüfen
+# CronTab pruefen
 crontab -l
+
+# Hinweis: Unter aktuellen macOS-Versionen benoetigt cron die Berechtigung
+# "Festplattenvollzugriff", um auf ~/Desktop zugreifen zu duerfen:
+# Systemeinstellungen -> Datenschutz & Sicherheit -> Festplattenvollzugriff

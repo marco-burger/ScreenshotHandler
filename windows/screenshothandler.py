@@ -1,99 +1,129 @@
-import time
+#!/usr/bin/env python3
+"""Screenshots aufraeumen: alte ins Archiv verschieben, sehr alte loeschen.
 
-start = time.perf_counter()
+ACHTUNG: Dieses Skript LOESCHT Dateien im Archiv-Verzeichnis unwiderruflich.
+Vor dem ersten echten Lauf immer erst mit --dry-run pruefen.
+"""
 
-from datetime import datetime
-
-startingTimestamp = datetime.now()
-
-import os
-import time
-from datetime import date, timedelta
-
+import argparse
 import logging
+import os
 import sys
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # -------------------------------------------------------------
-# Pfad-Setup
+# Konfiguration -- hier anpassen oder per Umgebungsvariable setzen
 # -------------------------------------------------------------
 
-base_dir = Path(r"C:\Users\<USER>\Pictures\Screenshots")
-archive_dir = base_dir / "Archiv"
+# Verzeichnis, in dem Windows die Screenshots ablegt
+SCREENSHOT_DIR = Path(
+    os.environ.get("SCREENSHOT_DIR", Path.home() / "Pictures" / "Screenshots")
+)
 
-archive_dir.mkdir(parents=True, exist_ok=True)
+# Archiv-Verzeichnis (Standard: Unterordner "Archiv")
+ARCHIVE_DIR = Path(os.environ.get("ARCHIVE_DIR", SCREENSHOT_DIR / "Archiv"))
+
+# Verzeichnis fuer die Logdateien
+LOG_DIR = Path(
+    os.environ.get("LOG_DIR", Path.home() / "CronTabs" / "ScreenshotHandler" / "logs")
+)
+
+# Nach so vielen Tagen wird eine Datei ins Archiv verschoben
+ARCHIVE_AFTER_DAYS = int(os.environ.get("ARCHIVE_AFTER_DAYS", "10"))
+
+# Nach so vielen Tagen wird eine Datei im Archiv geloescht.
+# Hintergrund: liegt das Archiv in OneDrive, bricht die Synchronisation ab,
+# wenn zu viele Dateien im Archiv liegen -- daher hier kuerzer als unter macOS.
+DELETE_AFTER_DAYS = int(os.environ.get("DELETE_AFTER_DAYS", "90"))
 
 # -------------------------------------------------------------
 # Logging-Setup
 # -------------------------------------------------------------
 
-# Name der aktuellen Python-Datei ohne .py
 script_name = Path(__file__).stem
-
-# Aktueller Monat formatieren (YYYY-MM)
 this_month = datetime.now().strftime("%Y-%m")
+log_path = LOG_DIR / f"{script_name}_{this_month}.log"
+log_path.parent.mkdir(parents=True, exist_ok=True)
 
-# Logfile-Name erzeugen
-log_filename = f"{script_name}_{this_month}.log"
-log_path = Path(r"C:\Users\<USER>\CronTabs\ScreenshotHandler\logs") / log_filename
-log_path.parent.mkdir(parents=True, exist_ok=True)  # Sicherstellen, dass der Ordner existiert 
-
-# Logging konfigurieren
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler(log_path, encoding="utf-8"),
-        logging.StreamHandler(sys.stdout)  # Ausgabe weiterhin in Konsole
-    ]
+        logging.StreamHandler(sys.stdout),
+    ],
 )
-
-# Beispiel-Ausgaben
-# logging.info("Script gestartet")
-# logging.debug("Debug-Information")
-# logging.warning("Warnung!")
-# logging.error("Fehler aufgetreten")
 
 # -------------------------------------------------------------
 # Start des eigentlichen Programmes
-# ------------------------------------------------------------- 
+# -------------------------------------------------------------
 
-today = date.today()
-today = time.localtime()
-today = time.strftime("%Y-%m-%d", today)
 
-minus10days = date.today() - timedelta(10)
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Nur anzeigen, was passieren wuerde -- nichts verschieben oder loeschen",
+    )
+    args = parser.parse_args()
 
-minus90days = date.today() - timedelta(90)
+    if not SCREENSHOT_DIR.is_dir():
+        logging.error("Screenshot-Verzeichnis nicht gefunden: %s", SCREENSHOT_DIR)
+        return 1
 
-actuall = 0
-toArchive = 0
-inArchive = 0
-deleted = 0
+    if not args.dry_run:
+        ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
 
-for file in base_dir.iterdir():
-    if file.suffix.lower() == ".png":
-        fts = file.stat().st_mtime
-        fts_ctz = date.fromtimestamp(fts)
-        if fts_ctz <= minus10days:
+    archive_before = date.today() - timedelta(days=ARCHIVE_AFTER_DAYS)
+    delete_before = date.today() - timedelta(days=DELETE_AFTER_DAYS)
+
+    actuall = 0
+    toArchive = 0
+    inArchive = 0
+    deleted = 0
+
+    # Aktuelle Screenshots durchgehen und alte ins Archiv verschieben
+    for file in SCREENSHOT_DIR.iterdir():
+        if not file.is_file() or file.suffix.lower() != ".png":
+            continue
+        mdate = date.fromtimestamp(file.stat().st_mtime)
+        if mdate <= archive_before:
             toArchive += 1
-            src_path = file
-            dst_path = archive_dir / file.name
-            file.replace(dst_path)
+            if args.dry_run:
+                logging.info("[dry-run] wuerde archivieren: %s", file.name)
+            else:
+                file.replace(ARCHIVE_DIR / file.name)
         else:
             actuall += 1
 
-#Spezieller Fix für OneDrive: Alle Dateien im Archiv durchgehen und die alten Dateien löschen, da OneDrive sonst nicht mehr synchronisiert, wenn zu viele Dateien im Archiv liegen. Es werden nur die Dateien gelöscht, die älter als 90 Tage sind.
-archive_files = [p for p in archive_dir.iterdir() if p.is_file() and p.suffix.lower() == ".png"]
+    # Archiv durchgehen und sehr alte Dateien loeschen (OneDrive-Fix, s. o.)
+    if ARCHIVE_DIR.is_dir():
+        for file in ARCHIVE_DIR.iterdir():
+            if not file.is_file() or file.suffix.lower() != ".png":
+                continue
+            mdate = date.fromtimestamp(file.stat().st_mtime)
+            if mdate <= delete_before:
+                deleted += 1
+                if args.dry_run:
+                    logging.info("[dry-run] wuerde loeschen: %s", file.name)
+                else:
+                    file.unlink()
+            else:
+                inArchive += 1
 
-for file_a in archive_files:
-    mdate = date.fromtimestamp(file_a.stat().st_mtime)
-    if mdate <= minus90days:
-        deleted += 1
-        file_a.unlink()
-    else:
-        inArchive += 1
+    logging.info(
+        "%sAktuelle Daten: %d, Verschobene Daten: %d, Archivierte Daten: %d, "
+        "Geloeschte Daten: %d",
+        "[dry-run] " if args.dry_run else "",
+        actuall,
+        toArchive,
+        inArchive,
+        deleted,
+    )
+    return 0
 
-logging.info("Aktuelle Daten: %d, Verschobene Daten: %d, Archivierte Daten: %d, Gelöschte Daten: %d", actuall, toArchive, inArchive, deleted)
 
-
+if __name__ == "__main__":
+    sys.exit(main())

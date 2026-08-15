@@ -1,2 +1,20 @@
-/log.csv
-/.DS_store
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Laufzeit-Artefakte dieses Skripts
+*.log
+log.csv
+logs/
